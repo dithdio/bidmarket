@@ -5,19 +5,23 @@
 -- DROP TABLE IF EXISTS users;
 
 -- 1. Users
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL, -- STORE HASHED PASSWORDS ONLY
+    password TEXT NOT NULL,
     balance DECIMAL(10,2) DEFAULT 0.00
 );
 
--- 2. Items
+-- 2. Items Status Enum (with safety check)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'item_status') THEN
+        CREATE TYPE item_status AS ENUM ('active', 'sold', 'expired', 'canceled');
+    END IF;
+END $$;
 
-CREATE TYPE item_status AS ENUM ('active', 'sold', 'expired', 'canceled');
-
-
+-- 3. Items Table
 CREATE TABLE IF NOT EXISTS items (
     id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
@@ -30,7 +34,7 @@ CREATE TABLE IF NOT EXISTS items (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. Bids
+-- 4. Bids Table
 CREATE TABLE IF NOT EXISTS bids (
     id SERIAL PRIMARY KEY,
     item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
@@ -39,11 +43,10 @@ CREATE TABLE IF NOT EXISTS bids (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 4. Watchlist
+-- 5. Watchlist Table
 CREATE TABLE IF NOT EXISTS watchlist (
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     PRIMARY KEY (user_id, item_id)
 );
