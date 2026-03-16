@@ -75,8 +75,7 @@ describe('POST /api/users/register', () => {
     
                 expect(response.statusCode).toBe(400); 
                 expect(response.body).toHaveProperty('error'); 
-                expect(response.body).not.toHaveProperty('token');
-                
+                expect(response.body).not.toHaveProperty('token');    
         }
     );
 
@@ -126,6 +125,58 @@ describe('POST /api/users/register', () => {
             expect(response.statusCode).toBe(400); 
             expect(response.body).toHaveProperty('error'); 
             expect(response.body).not.toHaveProperty('token');
+    });
+
+    describe('POST /api/users/login', () => {
+        const LOGIN_USER = {
+            username: 'logintest',
+            email: 'login@test.com',
+            password: 'password123'
+        };
+
+        // Before we test login, we need a user to exist in the DB
+        beforeAll(async () => {
+            await request(app)
+                .post('/api/users/register')
+                .send(LOGIN_USER);
+        });
+
+        test('It should login successfully with valid credentials', async () => {
+            const response = await request(app)
+                .post('/api/users/login')
+                .send({
+                    email: LOGIN_USER.email,
+                    password: LOGIN_USER.password
+                });
+
+            expect(response.statusCode).toBe(200);
+            expect(response.body).toHaveProperty('token');
+            expect(response.body.user).toHaveProperty('email', LOGIN_USER.email);
+            expect(response.body.user).not.toHaveProperty('password');
+        });
+
+        test('It should fail with an incorrect password', async () => {
+            const response = await request(app)
+                .post('/api/users/login')
+                .send({
+                    email: LOGIN_USER.email,
+                    password: 'wrongpassword'
+                });
+
+            expect(response.statusCode).toBe(401);
+            expect(response.body.error).toBeDefined();
+        });
+
+        test('It should fail if the user does not exist', async () => {
+            const response = await request(app)
+                .post('/api/users/login')
+                .send({
+                    email: 'fakeuser@test.com',
+                    password: 'password123'
+                });
+
+            expect(response.statusCode).toBe(401);
+        });
     });
 
 
