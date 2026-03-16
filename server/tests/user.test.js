@@ -35,12 +35,14 @@ describe('POST /api/users/register', () => {
 
         expect(response.statusCode).toBe(201);
         expect(response.body.email).toBe(TEST_USER.email);
+
+        expect(response.body).toHaveProperty('token');
+        expect(response.body).not.toHaveProperty('password');
     });
 
     test('It should fail if the email is already taken', async () => {
         // 1. MANUALLY CREATE the user first so we KNOW they exist
         // We call the DB directly here to set the "stage"
-        await db.query('DELETE FROM users WHERE email = $1', [TEST_USER.email]); 
         await request(app).post('/api/users/register').send(TEST_USER);
 
         // 2. NOW try to register them again
@@ -49,6 +51,81 @@ describe('POST /api/users/register', () => {
             .send(TEST_USER);
 
         expect(response.statusCode).toBe(400); 
-        expect(response.body.error).toMatch(/exists/i);xw
+        expect(response.body.error).toMatch(/exists/i);
     });
+
+    test.each(['username', 'email', 'password'])(
+        'It should fail if %s is missing', 
+        async (field) => {
+            // 1. Start with a perfectly valid user
+            const userData = {
+                username: 'clean_tester',
+                email: 'clean@test.com',
+                password: 'password123'
+            };
+    
+            // 2. Remove the specific field we are testing
+            delete userData[field];
+    
+            // 3. Send the request
+            const response = await request(app)
+                .post('/api/users/register')
+                .send(userData);
+    
+                expect(response.statusCode).toBe(400); 
+                expect(response.body).toHaveProperty('error'); 
+                expect(response.body).not.toHaveProperty('token');
+                
+        }
+    );
+
+    test('It should fail if the username is 3 or less characters', async () => {
+        const shortUsernameUser = {
+            username: 'abc', 
+            email: 'short@test.com',
+            password: 'password123'
+        };
+
+        const response = await request(app)
+            .post('/api/users/register')
+            .send(shortUsernameUser);
+
+            expect(response.statusCode).toBe(400); 
+            expect(response.body).toHaveProperty('error'); 
+            expect(response.body).not.toHaveProperty('token');
+    });
+
+    test('It should fail if the password is 3 or less characters', async () => {
+        const shortPasswordUser = {
+            username: 'validUser',
+            email: 'shortpass@test.com',
+            password: '123' 
+        };
+
+        const response = await request(app)
+            .post('/api/users/register')
+            .send(shortPasswordUser);
+
+            expect(response.statusCode).toBe(400); 
+            expect(response.body).toHaveProperty('error'); 
+            expect(response.body).not.toHaveProperty('token');
+    });
+
+    test('It should fail if the email is not a valid format', async () => {
+        const invalidEmailUser = {
+            username: 'validUser',
+            email: 'this-is-not-an-email',
+            password: 'password123'
+        };
+    
+        const response = await request(app)
+            .post('/api/users/register')
+            .send(invalidEmailUser);
+    
+            expect(response.statusCode).toBe(400); 
+            expect(response.body).toHaveProperty('error'); 
+            expect(response.body).not.toHaveProperty('token');
+    });
+
+
 });
