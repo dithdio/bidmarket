@@ -6,9 +6,15 @@ const db = require('./db/db');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Import  route files
+const userRoutes = require('./routes/user');
+
 // Middleware
 app.use(cors()); 
 app.use(express.json());
+
+
+app.use('/api/users', userRoutes);
 
 // Basic Test Route
 app.get('/', (req, res) => {
