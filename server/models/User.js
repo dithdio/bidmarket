@@ -9,3 +9,7 @@ const createUser = async (username, email, password) => {
     const result = await db.query(query, [username, email, password]);
     return result.rows[0];
 };
+
+module.exports = {
+    createUser
+};

@@ -1,8 +1,8 @@
 -- To reset your DB, uncomment the lines below:
--- DROP TABLE IF EXISTS watchlist;
--- DROP TABLE IF EXISTS bids;
--- DROP TABLE IF EXISTS items;
--- DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS watchlist;
+DROP TABLE IF EXISTS bids;
+DROP TABLE IF EXISTS items;
+DROP TABLE IF EXISTS users;
 
 -- 1. Users
 CREATE TABLE IF NOT EXISTS users (
@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
-    balance DECIMAL(10,2) DEFAULT 0.00
+    balance DECIMAL(10,2) DEFAULT 0.00,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- 2. Items Status Enum (with safety check)

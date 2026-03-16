@@ -25,6 +25,20 @@ afterAll(async () => {
 
 describe('POST /api/users/register', () => {
 
+    test('It should fail if the email is already taken', async () => {
+        // 1. MANUALLY CREATE the user first so we KNOW they exist
+        // We call the DB directly here to set the "stage"
+        await request(app).post('/api/users/register').send(TEST_USER);
+
+        // 2. NOW try to register them again
+        const response = await request(app)
+            .post('/api/users/register')
+            .send(TEST_USER);
+
+        expect(response.statusCode).toBe(400); 
+        expect(response.body.error).toMatch(/exists/i);
+    });
+
     test('It should register a new user and return 201', async () => {
         // 1. Ensure the user doesn't exist before we start
         await db.query('DELETE FROM users WHERE email = $1', [TEST_USER.email]);
@@ -39,20 +53,7 @@ describe('POST /api/users/register', () => {
         expect(response.body).toHaveProperty('token');
         expect(response.body).not.toHaveProperty('password');
     });
-
-    test('It should fail if the email is already taken', async () => {
-        // 1. MANUALLY CREATE the user first so we KNOW they exist
-        // We call the DB directly here to set the "stage"
-        await request(app).post('/api/users/register').send(TEST_USER);
-
-        // 2. NOW try to register them again
-        const response = await request(app)
-            .post('/api/users/register')
-            .send(TEST_USER);
-
-        expect(response.statusCode).toBe(400); 
-        expect(response.body.error).toMatch(/exists/i);
-    });
+    
 
     test.each(['username', 'email', 'password'])(
         'It should fail if %s is missing', 
