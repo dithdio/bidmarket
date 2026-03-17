@@ -47,7 +47,7 @@ describe('POST /api/items', () => {
             .set('Authorization', `Bearer ${token}`)
             .send(TEST_ITEM);;
         
-        expect(response.statusCode).toBe(200);
+        expect(response.statusCode).toBe(201);
         expect(response.body.title).toBe(TEST_ITEM.title);
         expect(response.body).toHaveProperty('created_at');
     });
