@@ -165,6 +165,8 @@ describe('POST /api/users/register', () => {
 
             expect(response.statusCode).toBe(401);
             expect(response.body.error).toBeDefined();
+            expect(response.body.user).not.toHaveProperty('token');
+
         });
 
         test('It should fail if the user does not exist', async () => {
@@ -176,8 +178,44 @@ describe('POST /api/users/register', () => {
                 });
 
             expect(response.statusCode).toBe(401);
+            expect(response.body.error).toBeDefined();
+            expect(response.body.user).not.toHaveProperty('token');
+        });
+        test('It should fail if email is missing', async () => {
+            const response = await request(app)
+                .post('/api/users/login')
+                .send({
+                    password: 'password123'
+                });
+    
+            eexpect(response.statusCode).toBe(400);
+            expect(response.body.error).toBeDefined();
+            expect(response.body.user).not.toHaveProperty('token');
+        });
+    
+        test('It should fail if password is missing', async () => {
+            const response = await request(app)
+                .post('/api/users/login')
+                .send({
+                    email: 'login@test.com'
+                });
+    
+                expect(response.statusCode).toBe(400);
+                expect(response.body.error).toBeDefined();
+                expect(response.body.user).not.toHaveProperty('token');
+        });
+    
+        test('It should fail if an empty body is sent', async () => {
+            const response = await request(app)
+                .post('/api/users/login')
+                .send({});
+    
+                expect(response.statusCode).toBe(401);
+                expect(response.body.error).toBeDefined();
+                expect(response.body.user).not.toHaveProperty('token');
         });
     });
+
 
 
 });

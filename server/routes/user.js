@@ -61,4 +61,49 @@ router.post('/register', async (req, res) => {
     }
 });
 
+router.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // 1. Validation: Ensure fields are present
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email and password are required' });
+        }
+
+        // 2. READ: Look for the user
+        const user = await findUserByEmail(email);
+        
+        // 3. CHECK: Does the user exist?
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // 4. VERIFY: Compare password hash
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // 5. SIGN: Create a JWT
+        // Use a secret key from your .env file
+        const token = jwt.sign(
+            { id: user.id, email: user.email },
+            process.env.JWT_SECRET || 'fallback_secret', // Make sure to add JWT_SECRET to .env
+            { expiresIn: '1h' }
+        );
+
+        // 6. RESPOND: Send token and user (minus password)
+        const { password: _, ...userWithoutPassword } = user;
+        res.json({
+            message: 'Login successful',
+            token,
+            user: userWithoutPassword
+        });
+
+    } catch (err) {
+        console.error('Login error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;
