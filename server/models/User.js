@@ -17,8 +17,16 @@ const findUserByEmail = async (email) => {
     return result.rows[0];
 };
 
+// returns id, username, email, balance and time of creation based on id
+const findUserById = async (id) => {
+    const query = 'SELECT id, username, email, balance, created_at FROM users WHERE id = $1';
+    const result = await db.query(query, [id]);
+    return result.rows[0];
+};
+
 
 module.exports = {
     createUser,
-    findUserByEmail
+    findUserByEmail,
+    findUserById
 };

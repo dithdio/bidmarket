@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { createUser } = require('../models/user');
+const { createUser, findUserByEmail, findUserById} = require('../models/user');
+const auth = require('../middleware/auth');
 
 // POST /api/users/register
 router.post('/register', async (req, res) => {
@@ -103,6 +104,22 @@ router.post('/login', async (req, res) => {
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// GET /api/users/me 
+// gets user data for front end based on user id
+router.get('/me', auth, async (req, res) => {
+    try {
+        const user = await findUserById(req.user.id);
+        
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
     }
 });
 
