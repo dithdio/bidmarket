@@ -135,6 +135,13 @@ describe('POST /api/items', () => {
         expect(response.statusCode).toBe(400); 
         expect(response.body).toHaveProperty('error')
     })
-
-
 });
+
+// get all items a user does not own and does not have a bid on
+describe('get /api/buyableItems', () => {
+});
+
+// get all items a user is selling 
+describe('get /api/listedItems', () => {
+});
+
