@@ -1,6 +1,7 @@
 // db.js
 const { Pool } = require('pg');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -17,7 +18,16 @@ pool.query('SELECT NOW()', (err, res) => {
   }
 });
 
+const query = async (text, params) => {
+  const start = Date.now();
+  const res = await pool.query(text, params);
+  const duration = Date.now() - start;
+  console.log('executed query', { duration }); // see how long the internet trip takes!
+  return res;
+}
+
 
 module.exports = {
-  query: (text, params) => pool.query(text, params),
+  query,
+  pool
 };
