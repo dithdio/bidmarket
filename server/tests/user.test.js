@@ -1,7 +1,6 @@
 const request = require('supertest');
 const app = require('../index');
 const db = require('../db/db');
-const auth = require('../middleware/auth');
 
 const TEST_USER = {
     username: 'api_tester',
