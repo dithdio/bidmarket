@@ -117,7 +117,7 @@ describe('POST /api/users/register', () => {
             expect(response.body).toHaveProperty('error'); 
             expect(response.body).not.toHaveProperty('token');
     });
-
+});
 describe('POST /api/users/login', () => {
     const LOGIN_USER = {
         username: 'logintest',
@@ -225,7 +225,4 @@ describe('GET /api/users/me', () => {
             .set('Authorization', 'Bearer not-a-real-token');
         expect(response.statusCode).toBe(401);
     });
-});
-
-
 });
