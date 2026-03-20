@@ -289,8 +289,55 @@ describe('needs multiple items among 2 users', () => {
             expect(res.statusCode).toBe(401);
         });
     });      
-            
+});
 
+describe('GET /api/items/:itemid', () => {
+    
+    test('SUCCESS: Should return a specific item by its ID', async () => {
+        const itemResult = await db.query(
+            'SELECT id FROM items WHERE title = $1 LIMIT 1', 
+            [TEST_ITEMS[0].title]
+        );
+        const validId = itemResult.rows[0].id;
+
+        const response = await request(app)
+            .get(`/api/items/${validId}`)
+            .set('Authorization', `Bearer ${token}`);
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.title).toBe(TEST_ITEMS[0].title);
+        expect(response.body).toHaveProperty('description');
+        expect(response.body).toHaveProperty('seller_id');
+    });
+
+    test('NEGATIVE: Should return 404 if the item ID does not exist', async () => {
+        const nonExistentId = 999999;
+        
+        const response = await request(app)
+            .get(`/api/items/${nonExistentId}`)
+            .set('Authorization', `Bearer ${token}`);
+
+        expect(response.statusCode).toBe(404);
+        expect(response.body.error).toMatch(/not found/i);
+    });
+
+    test('NEGATIVE: Should return 400 if the ID format is invalid', async () => {
+        const response = await request(app)
+            .get('/api/items/not-a-number')
+            .set('Authorization', `Bearer ${token}`);
+
+
+        expect(response.statusCode).toBe(400);
+    });
+
+    test('NEGATIVE: Should fail if no token is provided', async () => {
+        const itemResult = await db.query('SELECT id FROM items LIMIT 1');
+        const validId = itemResult.rows[0].id;
+
+        const response = await request(app).get(`/api/items/${validId}`);
+        
+        expect(response.statusCode).toBe(401);
+    });
 });
     
     
