@@ -339,6 +339,73 @@ describe('GET /api/items/:itemid', () => {
         expect(response.statusCode).toBe(401);
     });
 });
+
+describe('DELETE /api/items/:itemid (Soft Delete)', () => {
+
+    test('SUCCESS: Should mark the item as canceled if owned by the user', async () => {
+
+        const itemRes = await db.query(
+            'SELECT id FROM items WHERE title = $1 LIMIT 1', 
+            [TEST_ITEMS[0].title]
+        );
+        const validId = itemRes.rows[0].id;
+
+        const response = await request(app)
+            .delete(`/api/items/${validId}`)
+            .set('Authorization', `Bearer ${token}`);
+
+        expect(response.statusCode).toBe(200);
+
+        const dbCheck = await db.query('SELECT status FROM items WHERE id = $1', [validId]);
+        expect(dbCheck.rows[0].status).toBe('canceled');
+    });
+
+    test('NEGATIVE: Should return 403 if User 2 tries to cancel User 1\'s item', async () => {
+        // 1. Get User 1's item ID
+        const itemRes = await db.query(
+            'SELECT id FROM items WHERE title = $1 LIMIT 1', 
+            [TEST_ITEMS[0].title]
+        );
+        const user1ItemId = itemRes.rows[0].id;
+
+        // 2. Act: Try to delete using User 2's token
+        const response = await request(app)
+            .delete(`/api/items/${user1ItemId}`)
+            .set('Authorization', `Bearer ${token2}`);
+
+        // 3. Assert: Forbidden!
+        expect(response.statusCode).toBe(403);
+        expect(response.body.error).toMatch(/unauthorized/i);
+        
+        // Verify it remained 'active'
+        const dbCheck = await db.query('SELECT status FROM items WHERE id = $1', [user1ItemId]);
+        expect(dbCheck.rows[0].status).toBe('active');
+    });
+
+    test('NEGATIVE: Should return 401 if no token is provided', async () => {
+        const response = await request(app).delete('/api/items/1');
+        expect(response.statusCode).toBe(401);
+    });
+
+    test('NEGATIVE: Should return 404/403 if the item ID does not exist', async () => {
+        const fakeId = 999999;
+        const response = await request(app)
+            .delete(`/api/items/${fakeId}`)
+            .set('Authorization', `Bearer ${token}`);
+
+        // Since the 'WHERE seller_id = $2' fails, it returns 403 in the route we wrote
+        expect(response.statusCode).toBe(403); 
+    });
+
+    test('NEGATIVE: Should return 400 if the item ID format is invalid', async () => {
+        const response = await request(app)
+            .delete('/api/items/abc-123')
+            .set('Authorization', `Bearer ${token}`);
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body.error).toMatch(/format/i);
+    });
+});
     
     
 
