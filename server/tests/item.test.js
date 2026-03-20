@@ -206,25 +206,94 @@ describe('needs multiple items among 2 users', () => {
         }
         // testuser gonna have items 0, 2 , 4 and testuser2 gonna have 1, 3 , 5 
     });
-    describe('get /api/buyableItems', () => {
-        test('POSITIVE: Should return items that each user can buy', async () => {
+
+    describe('GET /api/buyableItems', () => {
+        test('POSITIVE: Should return items that each user can buy (excluding their own)', async () => {
+
             const res1 = await request(app)
-            .get('/api/buyableItems')
-            .set('Authorization', `Bearer ${token}`);
-
+                .get('/api/buyableItems')
+                .set('Authorization', `Bearer ${token}`);
+    
+            expect(res1.statusCode).toBe(200);
+            expect(Array.isArray(res1.body)).toBe(true);
+    
+            // User 1 should NOT see their own titles (Items 0, 2, 4)
+            const user1Titles = res1.body.map(item => item.title);
+            expect(user1Titles).not.toContain(TEST_ITEMS[0].title);
+            expect(user1Titles).toContain(TEST_ITEMS[1].title); // They SHOULD see User 2's item
+    
             const res2 = await request(app)
-            .get('/api/buyableItems')
-            .set('Authorization', `Bearer ${token2}`);
+                .get('/api/buyableItems')
+                .set('Authorization', `Bearer ${token2}`);
+    
+            expect(res2.statusCode).toBe(200);
+    
+            // User 2 should NOT see their own titles (Items 1, 3, 5)
+            const user2Titles = res2.body.map(item => item.title);
+            expect(user2Titles).not.toContain(TEST_ITEMS[1].title);
+            expect(user2Titles).toContain(TEST_ITEMS[0].title); // They SHOULD see User 1's item
+        });
+    
+        test('NEGATIVE: Should fail if no token is provided', async () => {
+            const res = await request(app).get('/api/buyableItems');
+            expect(res.statusCode).toBe(401);
+        });
+    });
 
-        })
-        
+    describe('GET /api/listedItems', () => {
+        test('POSITIVE: Should return only the items listed by the current user', async () => {
+
+            const res1 = await request(app)
+                .get('/api/listedItems')
+                .set('Authorization', `Bearer ${token}`);
+    
+            expect(res1.statusCode).toBe(200);
+            expect(Array.isArray(res1.body)).toBe(true);
+    
+            const titles1 = res1.body.map(item => item.title);
+    
+            // User 1 should see Item 0 and Item 2, but NOT Item 1
+            expect(titles1).toContain(TEST_ITEMS[0].title);
+            expect(titles1).toContain(TEST_ITEMS[2].title);
+            expect(titles1).not.toContain(TEST_ITEMS[1].title);
+    
+            const res2 = await request(app)
+                .get('/api/listedItems')
+                .set('Authorization', `Bearer ${token2}`);
+    
+            expect(res2.statusCode).toBe(200);
+            const titles2 = res2.body.map(item => item.title);
+    
+            // User 2 should see Item 1 and Item 3, but NOT Item 0
+            expect(titles2).toContain(TEST_ITEMS[1].title);
+            expect(titles2).toContain(TEST_ITEMS[3].title);
+            expect(titles2).not.toContain(TEST_ITEMS[0].title);
+        });
+    
+        test('NEGATIVE: Should return an empty array if the user has no listings', async () => {
+            // Create a brand new user who hasn't posted anything
+            const tempUser = { username: 'newbie', email: 'new@test.com', password: 'password123' };
+            const regRes = await request(app).post('/api/users/register').send(tempUser);
+            const tempToken = regRes.body.token;
+    
+            const res = await request(app)
+                .get('/api/listedItems')
+                .set('Authorization', `Bearer ${tempToken}`);
+    
+            expect(res.statusCode).toBe(200);
+            expect(res.body).toEqual([]); 
+        });
+    
+        test('NEGATIVE: Should fail if no token is provided', async () => {
+            const res = await request(app).get('/api/listedItems');
+            expect(res.statusCode).toBe(401);
+        });
+    });      
             
 
-    });
-    
-    // get all items a user is selling 
-    describe('get /api/listedItems', () => {
-    });
 });
+    
+    
+
 
 
