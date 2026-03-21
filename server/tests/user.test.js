@@ -1,5 +1,5 @@
 const request = require('supertest');
-const app = require('../index');
+const { app, server } = require('../index');
 const db = require('../db/db');
 
 const TEST_USER = {
@@ -8,7 +8,14 @@ const TEST_USER = {
     password: 'password123'
 };
 
+const LOGIN_USER = {
+        username: 'logintest',
+        email: 'login@test.com',
+        password: 'password123'
+};
+
 const cleanup = async () => {
+    await db.query('DELETE FROM users WHERE email = $1', [LOGIN_USER.email]);
     await db.query('DELETE FROM users WHERE email = $1', [TEST_USER.email]);
 };
 
@@ -21,6 +28,7 @@ beforeEach(async () => {
 afterAll(async () => {
     await cleanup(); // Final wipe
     await db.pool.end(); // Essential for Jest to exit
+    server.close();
 });
 
 describe('POST /api/users/register', () => {
@@ -118,17 +126,13 @@ describe('POST /api/users/register', () => {
     });
 });
 describe('POST /api/users/login', () => {
-    const LOGIN_USER = {
-        username: 'logintest',
-        email: 'login@test.com',
-        password: 'password123'
-    };
     // Before we test login, we need a user to exist in the DB
-    beforeAll(async () => {
+    beforeEach(async () => {
         await request(app)
             .post('/api/users/register')
             .send(LOGIN_USER);
     });
+
     test('It should login successfully with valid credentials', async () => {
         const response = await request(app)
             .post('/api/users/login')

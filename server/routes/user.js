@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { createUser, findUserByEmail, findUserById} = require('../models/user');
+const { createUser, findUserByEmail, findUserById} = require('../models/User');
 const auth = require('../middleware/auth');
 
 // POST /api/users/register

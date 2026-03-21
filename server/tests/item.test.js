@@ -1,9 +1,7 @@
 const request = require('supertest');
-const app = require('../index');
+const { app, server } = require('../index');
 const db = require('../db/db');
 
-let token; 
-let token2;
 
 const TEST_USER = {
     username: 'api_tester',
@@ -15,6 +13,12 @@ const TEST_USER2 = {
     username: 'api_tester2',
     email: 'api2@test.com',
     password: 'password123'
+};
+
+const TEST_USER3 = { 
+    username: 'newbie',
+    email: 'new@test.com', 
+    password: 'password123' 
 };
 
 
@@ -69,11 +73,19 @@ const cleanup = async () => {
     await db.query('DELETE FROM items WHERE title = ANY($1)', [titles]);
 };
 
+let token; 
+let token2;
+let token3; 
+
 beforeAll(async () => {
-    const regRes = await request(app)
-        .post('/api/users/register')
-        .send(TEST_USER);
-    token = regRes.body.token;
+    const reg1 = await request(app).post('/api/users/register').send(TEST_USER);
+    token = reg1.body.token;
+
+    const reg2 = await request(app).post('/api/users/register').send(TEST_USER2);
+    token2 = reg2.body.token;
+
+    const reg3 = await request(app).post('/api/users/register').send(TEST_USER3);
+    token3 = reg3.body.token;
 });
 
 
@@ -81,8 +93,9 @@ beforeAll(async () => {
 // After the whole file is done: Clean up the mess and close the connection
 afterAll(async () => {
     await cleanup(); // Final wipe of items
-    await db.query('DELETE FROM users WHERE email = ANY($1)', [TEST_USER.email, TEST_USER2.email]); // final wipe of users
+    await db.query('DELETE FROM users WHERE email = ANY($1)', [[TEST_USER.email, TEST_USER2.email, TEST_USER3.email]]); // final wipe of users
     await db.pool.end(); // Essential for Jest to exit
+    server.close();
 });
 
 describe('POST /api/items', () => {
@@ -106,7 +119,7 @@ describe('POST /api/items', () => {
         'It should fail if %s is missing', 
         async (field) => {
             // 1. Start with a perfectly valid item
-            const sampleItem = { ...TEST_ITEM[0] };
+            const sampleItem = { ...TEST_ITEMS[0] };
             // 2. Remove the specific field we are testing
             delete sampleItem[field];
             // 3. Send the request
@@ -191,10 +204,6 @@ describe('POST /api/items', () => {
 
 describe('needs multiple items among 2 users', () => {
     beforeAll(async () => {
-        const regRes = await request(app)
-            .post('/api/users/register')
-            .send(TEST_USER2);
-        token2 = regRes.body.token;
 
         for (let i = 0; i < TEST_ITEMS.length; i++) {
             // Determine which token to use based on even/odd index
@@ -207,13 +216,12 @@ describe('needs multiple items among 2 users', () => {
         // testuser gonna have items 0, 2 , 4 and testuser2 gonna have 1, 3 , 5 
     });
 
-    describe('GET /api/buyableItems', () => {
+    describe('GET /api/items/buyableItems', () => {
         test('POSITIVE: Should return items that each user can buy (excluding their own)', async () => {
 
             const res1 = await request(app)
-                .get('/api/buyableItems')
+                .get('/api/items/buyableItems')
                 .set('Authorization', `Bearer ${token}`);
-    
             expect(res1.statusCode).toBe(200);
             expect(Array.isArray(res1.body)).toBe(true);
     
@@ -223,7 +231,7 @@ describe('needs multiple items among 2 users', () => {
             expect(user1Titles).toContain(TEST_ITEMS[1].title); // They SHOULD see User 2's item
     
             const res2 = await request(app)
-                .get('/api/buyableItems')
+                .get('/api/items/buyableItems')
                 .set('Authorization', `Bearer ${token2}`);
     
             expect(res2.statusCode).toBe(200);
@@ -235,16 +243,16 @@ describe('needs multiple items among 2 users', () => {
         });
     
         test('NEGATIVE: Should fail if no token is provided', async () => {
-            const res = await request(app).get('/api/buyableItems');
+            const res = await request(app).get('/api/items/buyableItems');
             expect(res.statusCode).toBe(401);
         });
     });
 
-    describe('GET /api/listedItems', () => {
+    describe('GET /api/items/listedItems', () => {
         test('POSITIVE: Should return only the items listed by the current user', async () => {
 
             const res1 = await request(app)
-                .get('/api/listedItems')
+                .get('/api/items/listedItems')
                 .set('Authorization', `Bearer ${token}`);
     
             expect(res1.statusCode).toBe(200);
@@ -258,7 +266,7 @@ describe('needs multiple items among 2 users', () => {
             expect(titles1).not.toContain(TEST_ITEMS[1].title);
     
             const res2 = await request(app)
-                .get('/api/listedItems')
+                .get('/api/items/listedItems')
                 .set('Authorization', `Bearer ${token2}`);
     
             expect(res2.statusCode).toBe(200);
@@ -272,20 +280,17 @@ describe('needs multiple items among 2 users', () => {
     
         test('NEGATIVE: Should return an empty array if the user has no listings', async () => {
             // Create a brand new user who hasn't posted anything
-            const tempUser = { username: 'newbie', email: 'new@test.com', password: 'password123' };
-            const regRes = await request(app).post('/api/users/register').send(tempUser);
-            const tempToken = regRes.body.token;
-    
+
             const res = await request(app)
-                .get('/api/listedItems')
-                .set('Authorization', `Bearer ${tempToken}`);
+                .get('/api/items/listedItems')
+                .set('Authorization', `Bearer ${token3}`);
     
             expect(res.statusCode).toBe(200);
             expect(res.body).toEqual([]); 
         });
     
         test('NEGATIVE: Should fail if no token is provided', async () => {
-            const res = await request(app).get('/api/listedItems');
+            const res = await request(app).get('/api/items/listedItems');
             expect(res.statusCode).toBe(401);
         });
     });  
@@ -293,8 +298,9 @@ describe('needs multiple items among 2 users', () => {
 });
 
 describe('GET /api/items/:itemid', () => {
-    
+
     test('SUCCESS: Should return a specific item by its ID', async () => {
+        
         const itemResult = await db.query(
             'SELECT id FROM items WHERE title = $1 LIMIT 1', 
             [TEST_ITEMS[0].title]
@@ -302,8 +308,7 @@ describe('GET /api/items/:itemid', () => {
         const validId = itemResult.rows[0].id;
 
         const response = await request(app)
-            .get(`/api/items/${validId}`)
-            .set('Authorization', `Bearer ${token}`);
+            .get(`/api/items/${validId}`);
 
         expect(response.statusCode).toBe(200);
         expect(response.body.title).toBe(TEST_ITEMS[0].title);
@@ -315,8 +320,7 @@ describe('GET /api/items/:itemid', () => {
         const nonExistentId = 999999;
         
         const response = await request(app)
-            .get(`/api/items/${nonExistentId}`)
-            .set('Authorization', `Bearer ${token}`);
+            .get(`/api/items/${nonExistentId}`);
 
         expect(response.statusCode).toBe(404);
         expect(response.body.error).toMatch(/not found/i);
@@ -324,24 +328,26 @@ describe('GET /api/items/:itemid', () => {
 
     test('NEGATIVE: Should return 400 if the ID format is invalid', async () => {
         const response = await request(app)
-            .get('/api/items/not-a-number')
-            .set('Authorization', `Bearer ${token}`);
+            .get('/api/items/not-a-number');
 
 
         expect(response.statusCode).toBe(400);
     });
-
-    test('NEGATIVE: Should fail if no token is provided', async () => {
-        const itemResult = await db.query('SELECT id FROM items LIMIT 1');
-        const validId = itemResult.rows[0].id;
-
-        const response = await request(app).get(`/api/items/${validId}`);
-        
-        expect(response.statusCode).toBe(401);
-    });
 });
 
 describe('DELETE /api/items/:itemid (Soft Delete)', () => {
+
+    beforeAll(async () => {
+        for (let i = 0; i < TEST_ITEMS.length; i++) {
+            // Determine which token to use based on even/odd index
+            const currentToken = (i % 2 === 0) ? token : token2;
+            await request(app)
+                .post('/api/items')
+                .set('Authorization', `Bearer ${currentToken}`)
+                .send(TEST_ITEMS[i]);
+        }
+        // testuser gonna have items 0, 2 , 4 and testuser2 gonna have 1, 3 , 5 
+    });
 
     test('SUCCESS: Should mark the item as canceled if owned by the user', async () => {
 
@@ -349,6 +355,7 @@ describe('DELETE /api/items/:itemid (Soft Delete)', () => {
             'SELECT id FROM items WHERE title = $1 LIMIT 1', 
             [TEST_ITEMS[0].title]
         );
+
         const validId = itemRes.rows[0].id;
 
         const response = await request(app)
@@ -365,7 +372,7 @@ describe('DELETE /api/items/:itemid (Soft Delete)', () => {
         // 1. Get User 1's item ID
         const itemRes = await db.query(
             'SELECT id FROM items WHERE title = $1 LIMIT 1', 
-            [TEST_ITEMS[0].title]
+            [TEST_ITEMS[2].title]
         );
         const user1ItemId = itemRes.rows[0].id;
 
@@ -408,19 +415,13 @@ describe('DELETE /api/items/:itemid (Soft Delete)', () => {
     });
 });
 
-describe('GET /api/items', () => {
+describe('GET /api/items/all', () => {
 
     test('SUCCESS: Should return all active items from all users', async () => {
-
-        const regRes = await request(app)
-            .post('/api/users/register')
-            .send(TEST_USER2);
-        token2 = regRes.body.token;
-
         for (let i = 0; i < TEST_ITEMS.length; i++) {
             // Determine which token to use based on even/odd index
             const currentToken = (i % 2 === 0) ? token : token2;
-            await request(app)
+            const loopVariable = await request(app)
                 .post('/api/items')
                 .set('Authorization', `Bearer ${currentToken}`)
                 .send(TEST_ITEMS[i]);
@@ -430,6 +431,10 @@ describe('GET /api/items', () => {
             'SELECT id FROM items WHERE title = $1 LIMIT 1', 
             [TEST_ITEMS[0].title]
         );
+
+        if (itemRes.rows.length === 0) {
+            throw new Error(`Setup failed: Could not find item "${TEST_ITEMS[0].title}" in the database. Check your insertion loop!`);
+        }
         const validId = itemRes.rows[0].id;
 
         const res = await request(app)
@@ -439,8 +444,7 @@ describe('GET /api/items', () => {
 
 
         const response = await request(app)
-            .get('/api/items')
-            .set('Authorization', `Bearer ${token}`);
+            .get('/api/items/all');
 
         expect(response.statusCode).toBe(200);
         expect(Array.isArray(response.body)).toBe(true);
@@ -461,8 +465,7 @@ describe('GET /api/items', () => {
         await db.query('DELETE FROM items');
 
         const response = await request(app)
-            .get('/api/items')
-            .set('Authorization', `Bearer ${token}`);
+            .get('/api/items/all');
 
         expect(response.statusCode).toBe(200);
         expect(response.body).toEqual([]);
@@ -479,7 +482,12 @@ describe('PATCH /api/items/:itemid (Update Item)', () => {
     };
 
     beforeEach(async () => {
-        const res = await db.query('SELECT id FROM items WHERE title = $1 LIMIT 1', [TEST_ITEMS[0].title]);
+        await request(app)
+            .post('/api/items')
+            .set('Authorization', `Bearer ${token}`)
+            .send(TEST_ITEMS[0]);
+        const res = await db.query('SELECT * FROM items WHERE title = $1 LIMIT 1', [TEST_ITEMS[0].title]);
+
         user1ItemId = res.rows[0].id;
     });
 

@@ -31,7 +31,7 @@ const cancelItem = async (id, seller_id) => {
 const getBuyableItems = async (userId) => {
     const query = `
         SELECT * FROM items 
-        WHERE seller_id != $1 AND item_status = 'active' AND end_time > NOW()
+        WHERE seller_id != $1 AND status = 'active' AND end_time > NOW()
         ORDER BY created_at DESC;
     `;
     const result = await db.query(query, [userId]);
@@ -46,9 +46,27 @@ const getListingItems = async (userId) => {
 }
 
 const getAllItems = async () => {
-    const query = 'SELECT * FROM items where item_status = active';
+    const query = "SELECT * FROM items WHERE status = 'active'"; 
     const result = await db.query(query);
     return result.rows;
 }
 
-module.exports = { createItem, cancelItem, getBuyableItems, getListingItems, findItemById, getAllItems }
+const updateItem = async(id, userId, updates) => {
+        const { title, description, end_time } = updates;
+        // Use COALESCE to keep old values if new ones aren't provided
+        const query = `
+            UPDATE items 
+            SET title = COALESCE($1, title),
+                description = COALESCE($2, description),
+                end_time = COALESCE($3, end_time)
+            WHERE id = $4 AND seller_id = $5 AND status = 'active'
+            RETURNING *;
+        `;
+        const values = [title, description, end_time, id, userId];
+        const result = await db.query(query, values);
+        return result.rows[0];
+}
+
+
+
+module.exports = { createItem, cancelItem, getBuyableItems, getListingItems, findItemById, getAllItems, updateItem }
