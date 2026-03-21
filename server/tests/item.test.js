@@ -468,6 +468,82 @@ describe('GET /api/items', () => {
         expect(response.body).toEqual([]);
     });
 });
+
+describe('PATCH /api/items/:itemid (Update Item)', () => {
+    
+    let user1ItemId;
+    const UPDATED_DATA = {
+        title: 'Updated Auction Title',
+        description: 'New and improved description!',
+        end_time: '2026-12-25T12:00:00Z'
+    };
+
+    beforeEach(async () => {
+        const res = await db.query('SELECT id FROM items WHERE title = $1 LIMIT 1', [TEST_ITEMS[0].title]);
+        user1ItemId = res.rows[0].id;
+    });
+
+
+    test('SUCCESS: Should allow User 1 to modify their own item', async () => {
+        const response = await request(app)
+            .patch(`/api/items/${user1ItemId}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send(UPDATED_DATA);
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.title).toBe(UPDATED_DATA.title);
+        expect(response.body.description).toBe(UPDATED_DATA.description);
+    });
+
+
+    test('NEGATIVE: Should return 403 if User 2 tries to modify User 1\'s item', async () => {
+        const response = await request(app)
+            .patch(`/api/items/${user1ItemId}`)
+            .set('Authorization', `Bearer ${token2}`) 
+            .send({ title: 'Hacked Title' });
+
+        expect(response.statusCode).toBe(403);
+        expect(response.body.error).toMatch(/unauthorized/i);
+
+        const dbCheck = await db.query('SELECT title FROM items WHERE id = $1', [user1ItemId]);
+        expect(dbCheck.rows[0].title).not.toBe('Hacked Title');
+    });
+
+    test('NEGATIVE: Should fail if the title is too short (<= 3)', async () => {
+        const response = await request(app)
+            .patch(`/api/items/${user1ItemId}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ title: 'Abc' });
+
+        expect(response.statusCode).toBe(400);
+    });
+
+    test('NEGATIVE: Should fail if description length is invalid (> 1000)', async () => {
+        const response = await request(app)
+            .patch(`/api/items/${user1ItemId}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ description: 'a'.repeat(1001) });
+
+        expect(response.statusCode).toBe(400);
+    });
+
+    test('NEGATIVE: Should fail if the end_time is in the past', async () => {
+        const response = await request(app)
+            .patch(`/api/items/${user1ItemId}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ end_time: '2020-01-01T00:00:00Z' });
+
+        expect(response.statusCode).toBe(400);
+    });
+
+    test('NEGATIVE: Should fail if no token is provided', async () => {
+        const response = await request(app)
+            .patch(`/api/items/${user1ItemId}`)
+            .send({ title: 'New Title' });
+
+        expect(response.statusCode).toBe(401);
+    });
+});
     
     
 
