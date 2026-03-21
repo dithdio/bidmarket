@@ -288,7 +288,8 @@ describe('needs multiple items among 2 users', () => {
             const res = await request(app).get('/api/listedItems');
             expect(res.statusCode).toBe(401);
         });
-    });      
+    });  
+        
 });
 
 describe('GET /api/items/:itemid', () => {
@@ -404,6 +405,67 @@ describe('DELETE /api/items/:itemid (Soft Delete)', () => {
 
         expect(response.statusCode).toBe(400);
         expect(response.body.error).toMatch(/format/i);
+    });
+});
+
+describe('GET /api/items', () => {
+
+    test('SUCCESS: Should return all active items from all users', async () => {
+
+        const regRes = await request(app)
+            .post('/api/users/register')
+            .send(TEST_USER2);
+        token2 = regRes.body.token;
+
+        for (let i = 0; i < TEST_ITEMS.length; i++) {
+            // Determine which token to use based on even/odd index
+            const currentToken = (i % 2 === 0) ? token : token2;
+            await request(app)
+                .post('/api/items')
+                .set('Authorization', `Bearer ${currentToken}`)
+                .send(TEST_ITEMS[i]);
+        }
+
+        const itemRes = await db.query(
+            'SELECT id FROM items WHERE title = $1 LIMIT 1', 
+            [TEST_ITEMS[0].title]
+        );
+        const validId = itemRes.rows[0].id;
+
+        const res = await request(app)
+            .delete(`/api/items/${validId}`)
+            .set('Authorization', `Bearer ${token}`);
+
+
+
+        const response = await request(app)
+            .get('/api/items')
+            .set('Authorization', `Bearer ${token}`);
+
+        expect(response.statusCode).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);
+
+        // We want to see User 1's items AND User 2's items in the same list
+        const titles = response.body.map(item => item.title);
+        
+        expect(titles).toContain(TEST_ITEMS[2].title); // User 1's item
+        expect(titles).toContain(TEST_ITEMS[1].title); // User 2's item
+        
+        // It should NOT return items that were canceled in previous tests
+        const statuses = response.body.map(item => item.status);
+        expect(statuses).not.toContain('canceled');
+    });
+
+    test('NEGATIVE: Should return empty array if no active items exist', async () => {
+        // First, wipe the items table for this specific test
+        await db.query('DELETE FROM items');
+
+        const response = await request(app)
+            .get('/api/items')
+            .set('Authorization', `Bearer ${token}`);
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body).toEqual([]);
     });
 });
     
