@@ -245,8 +245,6 @@ describe (' needs multiple bids', () => {
     beforeEach(async () => {
         multiBids = [];
 
-        await db.query('DELETE FROM bids');
-
         const bidsToCreate = [
             // Bid 1: User 2 bids on User 1's Item 0 (Starts at $50)
             { token: token2, item_id: item_ids[0], amount: 60.00 },
