@@ -204,7 +204,6 @@ describe('POST /api/items', () => {
 
 describe('needs multiple items among 2 users', () => {
     beforeAll(async () => {
-
         for (let i = 0; i < TEST_ITEMS.length; i++) {
             // Determine which token to use based on even/odd index
             const currentToken = (i % 2 === 0) ? token : token2;
