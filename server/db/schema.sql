@@ -25,8 +25,8 @@ END $$;
 -- 3. Items Table
 CREATE TABLE IF NOT EXISTS items (
     id SERIAL PRIMARY KEY,
-    title TEXT NOT NULL,
-    description TEXT,
+    title VARCHAR(100),
+    description VARCHAR(1000),
     starting_price DECIMAL(10,2) NOT NULL,
     current_price DECIMAL(10,2),
     status item_status DEFAULT 'active',

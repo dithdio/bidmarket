@@ -8,6 +8,7 @@ const PORT = process.env.PORT || 5001;
 
 // Import  route files
 const userRoutes = require('./routes/user');
+const itemRoutes = require('./routes/item')
 
 // Middleware
 app.use(cors()); 
@@ -15,6 +16,7 @@ app.use(express.json());
 
 
 app.use('/api/users', userRoutes);
+app.use('/api/items', itemRoutes);
 
 // Basic Test Route
 app.get('/', (req, res) => {
@@ -22,8 +24,8 @@ app.get('/', (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`✅ Server is running on port ${PORT}`);
 });
 
-module.exports = app;
+module.exports = {app, server} ;
