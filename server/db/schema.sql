@@ -46,8 +46,8 @@ CREATE TABLE IF NOT EXISTS bids (
 
 -- 5. Watchlist Table
 CREATE TABLE IF NOT EXISTS watchlist (
+    id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    PRIMARY KEY (user_id, item_id)
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
