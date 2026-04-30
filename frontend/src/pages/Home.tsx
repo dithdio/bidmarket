@@ -10,16 +10,35 @@ export default function  Home() {
       {user ? (
         <div>
           <p>Welcome back, <strong>{user.username}</strong>!</p>
-          
-        {/* Add this link to the selling dashboard */}
-        <Link to="/selling" style={{ textDecoration: 'none', color: '#0066cc', fontWeight: 'bold' }}>
-            Selling Dashboard
-        </Link>
-          
-          <button onClick={logout}>Logout</button>
-        </div>
+          <div style={{ 
+            maxWidth: '1200px', 
+            margin: '0 auto', 
+            padding: '20px', 
+            display: 'flex',
+            gap: '40px',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Link to="/selling" style={{ textDecoration: 'none', color: '#0066cc', fontWeight: 'bold' }}>
+                Selling Dashboard
+            </Link>
+            
+            <Link to="/buying" style={{ textDecoration: 'none', color: '#0066cc', fontWeight: 'bold' }}>
+                Buying Dashboard
+            </Link>
+          </div>
+          <div>
+            <button onClick={logout}>Logout</button>
+          </div>
+      </div>
       ) : (
+        <div>
         <p>You are not logged in.</p>
+          <Link to="/Login" style={{ textDecoration: 'none', color: '#0066cc', fontWeight: 'bold' }}>
+          Login
+          </Link>
+        </div>
+
       )}
     </div>
   );

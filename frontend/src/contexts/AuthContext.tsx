@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, type ReactNode, useContext } from 'react';
 import type { User } from '../types';
+import { jwtDecode } from 'jwt-decode'
 
 // 1. Define exactly what lives inside our "Global Cloud"
 interface AuthContextType {
@@ -15,13 +16,27 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
 
-    // When the app first loads, check if they are already logged in
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
         const storedToken = localStorage.getItem('token');
         
         if (storedUser && storedToken) {
-            setUser(JSON.parse(storedUser));
+            try {
+                // 1. Decode the token to get the expiration
+                const decoded: any = jwtDecode(storedToken);
+                const currentTime = Date.now() / 1000; // Convert ms to seconds
+
+                // 2. Compare current time to expiration time
+                if (decoded.exp < currentTime) {
+                    console.log("Token expired. Logging out...");
+                    logout(); // Token is dead, wipe everything
+                } else {
+                    setUser(JSON.parse(storedUser)); // Token is healthy!
+                }
+            } catch (err) {
+                // If token is malformed or can't be decoded
+                logout();
+            }   
         }
     }, []);
 

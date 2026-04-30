@@ -40,13 +40,13 @@ export const itemService = {
         await api.delete(`/items/${id}`);
     },
 
-    // 5. Fetch the items being sold by this user (GET /api/items/buyableItems)
+    // 5. Fetch the items that this user is able to buy (GET /api/items/buyableItems)
     getBuyableItems: async (): Promise<Item[]> => {
         const response = await api.get('/items/buyableItems');
         return response.data;
     },
     
-    // 6. Fetch the items that this user is able to buy (GET /api/items/listedItems)
+    // 6. Fetch the items being sold by this user (GET /api/items/listedItems)
     getListedItems: async (): Promise<Item[]> => {
         const response = await api.get('/items/listedItems');
         return response.data;

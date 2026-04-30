@@ -14,7 +14,8 @@ export interface Item {
     current_price: string;  
     end_time: string;
     seller_id: number;
-    status: 'active' | 'sold' | 'expired' | 'canceled';
+    status: 'active' | 'sold' | 'expired' | 'canceled',
+    created_at: string;
 }
 
 export interface Bid {

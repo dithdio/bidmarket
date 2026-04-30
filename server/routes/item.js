@@ -99,6 +99,7 @@ router.get('/all', async (req, res) => {
 
 router.get('/buyableItems', auth, async (req, res) => {
     try {
+        console.log("hi")
         const userId = req.user.id
         const buyableItems = await getBuyableItems(userId);
 

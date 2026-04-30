@@ -4,7 +4,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import SellingDashboard from './pages/SellingDashboard';
 import Home from './pages/Home';
-
+import NewItem from './pages/NewItem';
+import BuyingDashboard from './pages/BuyingDashboard';
 // A temporary placeholder for the homepage
 
 
@@ -31,6 +32,15 @@ export default function App() {
         <Route 
           path="/selling" 
           element={user ? <SellingDashboard /> : <Navigate to="/login" />} 
+        />
+          {/* Creatubg Item Route. */}
+        <Route 
+          path="/newitem" 
+          element={user ? <NewItem /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/buying" 
+          element={user ? <BuyingDashboard /> : <Navigate to="/login" />} 
         />
       </Routes> 
     </BrowserRouter>
