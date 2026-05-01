@@ -27,9 +27,6 @@ export default function BuyingDashboard() {
 
 
 
-
-
-
     }
 
     const changeOrder = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -57,8 +54,8 @@ export default function BuyingDashboard() {
         fetchMyItems();
     }, [user]);
 
-    //  helper to handle deletions directly from the dashboard
-    const handleDelete = async (itemId: number) => {
+    //  helper to handle bids directly from the dashboard
+    const handleBid = async (itemId: number) => {
         if (!window.confirm("Are you sure you want to delete this listing?")) return;
         
         try {
@@ -129,7 +126,7 @@ export default function BuyingDashboard() {
                             </div>
                             <p style={{ color: '#666', fontSize: '14px' }}>{item.description.substring(0, 60)}...</p>
                             <div style={{ margin: '15px 0', fontSize: '18px' }}>
-                                Highest Bid: <strong>${item.current_price}</strong>
+                                Current Price: <strong>${item.current_price}</strong>
                             </div>
                         </div>
 
@@ -138,7 +135,7 @@ export default function BuyingDashboard() {
                                 <button style={{ width: '100%', padding: '8px', cursor: 'pointer', backgroundColor: '#4CAF50' }}>Bid</button>
                             </Link>
                             <button 
-                                onClick={() => handleDelete(item.id)}
+                                onClick={() => handleBid(item.id)}
                                 style={{ padding: '8px', cursor: 'pointer', backgroundColor: '#ff4d4d', color: 'white', border: 'none', borderRadius: '4px' }}
                             >
                                 Watch 

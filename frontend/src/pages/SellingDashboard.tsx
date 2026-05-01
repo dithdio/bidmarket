@@ -10,6 +10,7 @@ export default function SellingDashboard() {
     const [myItems, setMyItems] = useState<Item[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [order, setOrder] = useState('Newest');
 
     useEffect(() => {
         // We only want to fetch if we actually have a logged-in user
@@ -28,6 +29,26 @@ export default function SellingDashboard() {
         };
         fetchMyItems();
     }, [user]);
+
+    const changeOrder = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const criteria = e.target.value;
+        setOrder(criteria);
+
+        const sortedItems = [...myItems].sort((a, b) => {
+        const priceA = parseFloat(a.starting_price);
+        const priceB = parseFloat(b.starting_price);
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+
+        if (criteria === 'Least to Most Expensive') return priceA - priceB;
+        if (criteria === 'Most to Least Expensive') return priceB - priceA;
+        if (criteria === 'Newest') return dateB - dateA;
+        if (criteria === 'Oldest') return dateA - dateB;
+        return 0;
+    });
+        setMyItems(sortedItems);
+    };
+
 
     //  helper to handle deletions directly from the dashboard
     const handleDelete = async (itemId: number) => {
@@ -65,9 +86,28 @@ export default function SellingDashboard() {
                     </button>
                 </Link>
 
-
-
             </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label htmlFor="sortBy-select">Sort By:</label>
+                
+                <select 
+                id="sortBy-select"
+                value={order} 
+                onChange={(e) => changeOrder(e)}
+                style={{ padding: '8px', borderRadius: '4px', fontSize: '16px' }}
+                >
+
+                {/* Actual options */}
+                <option value="Newest">Newest</option>
+                <option value="Oldest">Oldest</option>
+                <option value="Least to Most Expensive">Least to Most Expensive </option>
+                <option value="Most to Least Expensive">Most to Least Expensive</option>
+                </select>
+
+                {order && <p> Selected: <strong>{order}</strong></p>}
+            </div>
+
 
             {loading && <p>Loading your inventory...</p>}
             {error && <p style={{ color: 'red' }}>{error}</p>}
@@ -91,7 +131,7 @@ export default function SellingDashboard() {
                             </div>
                             <p style={{ color: '#666', fontSize: '14px' }}>{item.description.substring(0, 60)}...</p>
                             <div style={{ margin: '15px 0', fontSize: '18px' }}>
-                                Highest Bid: <strong>${item.current_price}</strong>
+                                Current Price: <strong>${item.current_price}</strong>
                             </div>
                         </div>
 

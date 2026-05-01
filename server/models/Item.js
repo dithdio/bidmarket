@@ -12,9 +12,17 @@ const createItem = async ({ seller_id, title, description, starting_price, end_t
 };
 
 const findItemById = async (id) => {
-    const result = await db.query('SELECT * FROM items WHERE id = $1', [id]);
-    return result.rows[0];
-}
+    const query = `
+            SELECT items.*, users.username AS seller_name 
+            FROM items 
+            LEFT JOIN users ON items.seller_id = users.id 
+            WHERE items.id = $1
+        `;
+        const result = await db.query(query, [id]);
+        console.log(result);
+        console.log("hello from finditembyid");
+        return result.rows[0];
+    }
 
 const cancelItem = async (id, seller_id) => {
     const query = `

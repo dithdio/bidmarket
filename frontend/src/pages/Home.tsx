@@ -31,15 +31,40 @@ export default function  Home() {
             <button onClick={logout}>Logout</button>
           </div>
       </div>
-      ) : (
-        <div>
-        <p>You are not logged in.</p>
-          <Link to="/Login" style={{ textDecoration: 'none', color: '#0066cc', fontWeight: 'bold' }}>
-          Login
-          </Link>
+      ) : <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        gap: '20px',             // Adds vertical space between elements
+        marginTop: '50px' 
+    }}>
+        <p style={{ margin: 0, fontSize: '18px', color: '#333' }}>You are not logged in.</p>
+        
+        <div style={{ display: 'flex', gap: '15px' }}> {/* Container for just the buttons */}
+            <Link to="/Login" style={{ 
+                textDecoration: 'none', 
+                color: 'white', 
+                backgroundColor: '#0066cc', 
+                padding: '10px 20px', 
+                borderRadius: '5px',
+                fontWeight: 'bold' 
+            }}>
+                Login
+            </Link>
+            
+            <Link to="/Register" style={{ 
+                textDecoration: 'none', 
+                color: 'white', 
+                backgroundColor: '#0066cc', 
+                padding: '10px 20px', 
+                borderRadius: '5px',
+                fontWeight: 'bold' 
+            }}>
+                Register
+            </Link>
         </div>
-
-      )}
+      </div>}
     </div>
   );
 };

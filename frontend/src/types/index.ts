@@ -16,6 +16,7 @@ export interface Item {
     seller_id: number;
     status: 'active' | 'sold' | 'expired' | 'canceled',
     created_at: string;
+    seller_name?: string;
 }
 
 export interface Bid {

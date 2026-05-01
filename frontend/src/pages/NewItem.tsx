@@ -35,6 +35,10 @@ export default function  NewItem() {
         } catch (err: any) {
             // C. Catch your backend validation errors
             setError(err.response?.data?.error || 'Failed to create item. Please try again.');
+
+            setTimeout(() => {
+                setIsSubmitting(false);
+            }, 3000);
         }
     };
  

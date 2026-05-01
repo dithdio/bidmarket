@@ -16,22 +16,12 @@ export const authService = {
 
     login: async (credentials: any): Promise<AuthResponse> => {
         const response = await api.post('/users/login', credentials);
-        
-        if (response.data.token && !response.data.user) {
-            return {
-                token: response.data.token,
-                user: {
-                    id: response.data.id,
-                    username: response.data.username,
-                    email: response.data.email
-                }
-            };
-        }
-        return response.data;
+        // Your backend already sends { token, user }, so just return it!
+        return response.data; 
     },
 
     logout: () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-    }
+    },
 };

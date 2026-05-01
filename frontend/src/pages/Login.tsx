@@ -1,35 +1,47 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/auth';
 
 export default function Login() {
-    // 1. Component State 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     
-    // 2. Global Hooks
-    const { login } = useAuth();
+    const { login, user } = useAuth();
     const navigate = useNavigate();
 
-    // 3. The Submit Handler
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault(); // Stop the page from refreshing!
-        setError('');       // Clear any old errors
+    useEffect(() => {
+        if (user) {
+            navigate('/');
+        }
+    }, [user, navigate]);
+
+    const handleSubmit = async () => {
+        // Clear previous errors
+        setError('');       
 
         try {
-            // A. Send the request to your Express server
             const data = await authService.login({ email, password });
             
-            // B. Success! Save to global state & localStorage
-            login(data.user, data.token);
-            
-            // C. Redirect them to the homepage
-            navigate('/');
+            if (data && data.token) {
+                login(data.user, data.token);
+                navigate('/');
+            }
         } catch (err: any) {
-            // D. Display the exact error your Express server sent back
-            setError(err.response?.data?.error || 'Failed to login. Please try again.');
+            console.log("Catch block triggered:", err);
+            
+            // Extract message safely
+            const message = err.response?.data?.error || err.message || 'Failed to login';
+            
+            setError(message);
+
+            // Clear error after 3 seconds (as requested)
+            setTimeout(() => {
+                setError('');      // Remove the red message
+                setEmail('');      // Clear the email field
+                setPassword('');   // Clear the password field
+            }, 3000);
         }
     };
 
@@ -37,10 +49,10 @@ export default function Login() {
         <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px' }}>
             <h2>Login to BidMarket</h2>
             
-            {/* If there's an error, show it in red */}
             {error && <p style={{ color: 'red', fontWeight: 'bold' }}>{error}</p>}
             
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            {/* Removed onSubmit from form to prevent native reload */}
+            <form style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <label>Email:</label>
                     <input 
@@ -63,7 +75,12 @@ export default function Login() {
                     />
                 </div>
                 
-                <button type="submit" style={{ padding: '10px', fontSize: '16px', cursor: 'pointer' }}>
+                {/* Changed type to "button" and added onClick */}
+                <button 
+                    type="button" 
+                    onClick={handleSubmit}
+                    style={{ padding: '10px', fontSize: '16px', cursor: 'pointer' }}
+                >
                     Login
                 </button>
             </form>

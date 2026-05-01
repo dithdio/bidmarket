@@ -31,11 +31,15 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
-            // Clear storage and redirect
+        // Only redirect if it's a 401 AND we aren't already trying to login
+        // This prevents the "Login Loop"
+        if (error.response?.status === 401 && !window.location.pathname.includes('/login')) {
             localStorage.removeItem('token');
+            localStorage.removeItem('user'); // Also clear the user object
             window.location.href = '/login'; 
         }
+        
+        // This line is CRITICAL: it passes the error back to your Login.tsx catch block
         return Promise.reject(error);
     }
 );
